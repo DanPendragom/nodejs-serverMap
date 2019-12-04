@@ -1,38 +1,32 @@
 const express = require('express')
 const cors = require('cors');
 const app = express()
-app.use(cors())
+const http = require('http').createServer(app)
+const io = require('socket.io')(http)
 const PORT = 3001
-const MARKERS = require('./data/outro.json')
+const MARKERS = require('./data/markers.json')
+
+app.use((req, res, next) => {
+     req.io = io
+     next();
+})
+
+app.use(cors())
 
 app.get('/', (req, res) => {
      try {
           myfilter = (place) => {
-               let array = ['Place 1', 'Place 2', 'Place 3', 'Place 4']
-               
-               // O que falta? 
-               // 1° Receber duas latitudes e duas longitudes na requisição 
-               // 2° Criar um array com todas as latitudes e longitudes entre estes valores
-               // 3° Enviar como resposta todos os marcadorers com latitudes e longitudes dentro da intersecção
-               // for(let i = 0; i < array.length; i++){
-               //      if(place.name == array[i]){
-               //           return place
-               //      }
-               // }
-
-               let req = {lat: [20, 22], lng: [40, 42]}
-
-               for(let i = 0; i <= req.lat.length;i++){
-                    for(let f = 0; f <= req.lng.length;f++){
-                         if(place.latitude <= req.lat[i] && place.longitude <= req.lng[f]){
-                              return place
-                         }
+               let resp = JSON.parse(req.query.placemarked)
+               if (place.latitude <= resp.lat[0] && place.longitude <= resp.lng[0]) {
+                    if (place.latitude >= resp.lat[1] && place.longitude >= resp.lng[1]) {
+                         return place
                     }
                }
           }
 
           let filtered = MARKERS.filter(myfilter)
 
+          req.io.emit('place', filtered)
           return res.send(filtered)
      }
      catch (err) {
@@ -41,4 +35,6 @@ app.get('/', (req, res) => {
      }
 })
 
-app.listen(PORT)
+http.listen(PORT, () => {
+     console.log('Listening on port ' + PORT)
+})
